@@ -1,0 +1,10 @@
+botcity-framework-core>=0.2.7
+botcity-framework-web>=0.3.1
+botcity-maestro-sdk>=0.1.4
+# Uncomment to use botcity-utils
+#botcity-utils>=0.1.2
+# Uncomment to use botcity-crawler-plugin
+#botcity-crawler-plugin
+setuptools~=57.0.0
+mysql-connector-python~=8.0.28
+yagmail~=0.15.277
