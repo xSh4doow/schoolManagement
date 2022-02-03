@@ -11,9 +11,10 @@ def main():
         print("")
         print("1. Login as Student")
         print("2. Login as Teacher")
-        print("3. Login as Admin")
-        print("4. Recover Password")
-        print("5. Exit")
+        print("3. Login as Helper")
+        print("4. Login as Admin")
+        print("5. Recover Password")
+        print("6. Exit")
         print("")
 
         user_opt = input(str("Option : "))
@@ -23,11 +24,14 @@ def main():
             print("Logging in as Teacher!")
             auth("Teacher")
         elif user_opt == "3":
+            print("Logging in as Helper!")
+            auth("Helper")
+        elif user_opt == "4":
             print("Logging in as Admin")
             auth_adm()
-        elif user_opt == "4":
-            recover_pass_state()
         elif user_opt == "5":
+            recover_pass_state()
+        elif user_opt == "6":
             break
         else:
             print("No valid option was selected, please try again!")
@@ -45,6 +49,12 @@ def auth(type):
     command_handler.execute("SELECT * FROM users WHERE email = %s AND password = %s AND privilege = %s", query_vals)
     if command_handler.rowcount <= 0:
         print("Credentials not valid")
+        if privilege == "Student":
+            """student_session()"""
+        elif privilege == "Helper":
+            helper_session()
+        elif privilege == "Teacher":
+            teacher_session()
     else:
         print("Welcome " + privilege + "!")
 
@@ -116,6 +126,20 @@ def admin_session():
             break
 
 
+def helper_session():
+    while 1:
+        print("")
+        print("Helper Menu")
+        print("")
+        print("1. Mark Student Register")
+        print("2. View Register")
+        print("3. Logout")
+
+        user_opt = input(str("Option: "))
+        if user_opt == "1":
+            print("")
+
+
 def recover_pass_state():
     print("")
     print("Password Recovery System")
@@ -171,7 +195,16 @@ def recover_pass(email, privilege):
 
     privilege = str(privilege).title()
     password = get_pass(str_rec, privilege)
-    body = "You have requested a password recovery.\n Your password is: " + password + ".\n If you didn't requested the recovery, please ignore this email."
+    body = """<p>&nbsp; &nbsp; &nbsp; &nbsp;<img src="https://i.imgur.com/gNGuk0h.png" alt="" /></p>
+            <p>You requested a Password Recovery.</p>
+            <p>Your password is:"""+password+""" .</p>
+            <p></p>
+            <p></p>
+            <p>=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-</p>
+            <p></p>
+            <p></p>
+            <p><strong>If you didn't request, please ignore this e-mail.</strong><strong></strong></p>
+            <p><strong>Sent by School Management System, created using Python 3.9 by Pedro Rocha</strong><strong></strong></p>"""
     yag = yagmail.SMTP("testeescolapython@gmail.com", "!1escola1")
     yag.send(
         to=str_rec,
