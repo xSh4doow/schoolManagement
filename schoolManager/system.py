@@ -1,5 +1,6 @@
 import mysql.connector as mysql
 import yagmail
+from schoolManager.school import mark_attendance, set_grades, update_attendance
 
 db = mysql.connect(host="localhost", user="root", password="", database="escola")
 command_handler = db.cursor(buffered=True)
@@ -49,14 +50,13 @@ def auth(type):
     command_handler.execute("SELECT * FROM users WHERE email = %s AND password = %s AND privilege = %s", query_vals)
     if command_handler.rowcount <= 0:
         print("Credentials not valid")
+    else:
+        print("Welcome " + privilege + "!")
         if privilege == "Student":
             """student_session()"""
         elif privilege == "Helper":
             helper_session()
-        elif privilege == "Teacher":
-            teacher_session()
-    else:
-        print("Welcome " + privilege + "!")
+        # elif privilege == "Teacher":
 
 
 def auth_adm():
@@ -104,25 +104,32 @@ def eraseuser(type):
 
 def admin_session():
     while 1:
-        print("")
+        blank()
         print("Admin Menu")
-        print("")
+        blank()
         print("1. Register New Student")
         print("2. Register New Teacher")
-        print("3. Delete Existing Student")
-        print("4. Delete Existing Teacher")
-        print("5. Logout")
+        print("3. Register New Helper")
+        print("4. Delete Existing Student")
+        print("5. Delete Existing Teacher")
+        print("6. Delete Existing Helper")
+        print("7. Logout")
 
         user_opt = input(str("Option: "))
+        blank()
         if user_opt == "1":
             createuser("Student")
         elif user_opt == "2":
             createuser("Teacher")
         elif user_opt == "3":
-            eraseuser("Student")
+            createuser("Helper")
         elif user_opt == "4":
-            eraseuser("Teacher")
+            eraseuser("Student")
         elif user_opt == "5":
+            eraseuser("Teacher")
+        elif user_opt == "6":
+            eraseuser("Helper")
+        elif user_opt == "7":
             break
 
 
@@ -132,12 +139,35 @@ def helper_session():
         print("Helper Menu")
         print("")
         print("1. Mark Student Register")
-        print("2. View Register")
-        print("3. Logout")
-
+        print("2. Update Student Register")
+        print("3. View Register")
+        print("4. View All Registers")
+        print("5. Set Student Grade")
+        print("6. Logout")
+        blank()
         user_opt = input(str("Option: "))
+        blank()
         if user_opt == "1":
-            print("")
+            print("Which student you want to mark?")
+            view_all_students()
+            student = input(str(""))
+            mark_attendance(student)
+        elif user_opt == "2":
+            print("Which student you update the register?")
+            view_all_students()
+            student = input(str(""))
+            update_attendance(student)
+        elif user_opt == "3":
+            print("OK")
+        elif user_opt == "4":
+            print("OK2")
+        elif user_opt == "5":
+            print("Which student you want to set the grade? ")
+            view_all_students()
+            student = input(str(""))
+            set_grades(student)
+        elif user_opt == "6":
+            break
 
 
 def recover_pass_state():
@@ -212,6 +242,21 @@ def recover_pass(email, privilege):
         contents=body
     )
     print("Email Sent!")
+
+
+def view_all_students():
+    students = ""
+    command_handler.execute("SELECT name FROM users WHERE privilege = 'Student'")
+    for user in command_handler:
+        students = str(user)
+        students = students.replace('(', '')
+        students = students.replace(')', '')
+        students = students.replace("'", '')
+    print(str(students))
+
+
+def blank():
+    print("")
 
 
 main()
