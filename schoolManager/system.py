@@ -1,6 +1,6 @@
 import mysql.connector as mysql
 import yagmail
-from schoolManager.school import mark_attendance, set_grades, update_attendance
+from schoolManager.school import mark_attendance, set_grades, update_attendance, check_student
 
 db = mysql.connect(host="localhost", user="root", password="", database="escola")
 command_handler = db.cursor(buffered=True)
@@ -140,8 +140,8 @@ def helper_session():
         print("")
         print("1. Mark Student Register")
         print("2. Update Student Register")
-        print("3. View Register")
-        print("4. View All Registers")
+        print("3. View Student's Register")
+        print("4. View All Student's Registers")
         print("5. Set Student Grade")
         print("6. Logout")
         blank()
@@ -158,9 +158,25 @@ def helper_session():
             student = input(str(""))
             update_attendance(student)
         elif user_opt == "3":
-            print("OK")
+            print("Which student you want to check the registers?")
+            view_all_students()
+            student = input(str(""))
+            is_student = check_student(student)
+            if not is_student:
+                print("This is a valid student, please try again!")
+            else:
+                print(f"Viewing {student} registers!")
+                t_student = [student]
+                command_handler.execute("SELECT name, date, status, grade FROM attendance WHERE name = %s", t_student)
+                records = command_handler.fetchall()
+                for record in records:
+                    print(record)
         elif user_opt == "4":
-            print("OK2")
+            print("Viewing all student registers!")
+            command_handler.execute("SELECT name, date, status, grade FROM attendance")
+            records = command_handler.fetchall()
+            for record in records:
+                print(record)
         elif user_opt == "5":
             print("Which student you want to set the grade? ")
             view_all_students()
@@ -168,6 +184,8 @@ def helper_session():
             set_grades(student)
         elif user_opt == "6":
             break
+        else:
+            print("No valid option was selected!")
 
 
 def recover_pass_state():
@@ -259,4 +277,4 @@ def blank():
     print("")
 
 
-main()
+helper_session()
