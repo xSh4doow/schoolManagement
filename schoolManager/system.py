@@ -1,7 +1,9 @@
 import mysql.connector as mysql
 import yagmail
-from schoolManager.school import mark_attendance, set_grades, update_attendance, check_student
+from schoolManager.school import mark_attendance, update_attendance, check_student, add_student, \
+    add_teacher, delete_student, delete_teacher, update_student, delete_subject, create_subject
 
+#Using PHPmyadmin, change 'db' to where your db is located! (remember to also change in school.py!)
 db = mysql.connect(host="localhost", user="root", password="", database="escola")
 command_handler = db.cursor(buffered=True)
 
@@ -36,6 +38,70 @@ def main():
             break
         else:
             print("No valid option was selected, please try again!")
+
+
+def initialization():
+    attendance = """CREATE TABLE IF NOT EXISTS `attendance` (
+ `id` int(11) NOT NULL AUTO_INCREMENT,
+ `name` varchar(30) NOT NULL,
+ `date` varchar(30) NOT NULL,
+ `status` varchar(30) NOT NULL,
+ `grade` varchar(30) NOT NULL,
+ PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8"""
+
+    students = """CREATE TABLE IF NOT EXISTS `students` (
+ `id` int(11) NOT NULL AUTO_INCREMENT,
+ `name` varchar(30) NOT NULL,
+ `grade` int(3) NOT NULL,
+ `birthdate` date NOT NULL,
+ `father_name` varchar(30) NOT NULL,
+ `mother_name` varchar(30) NOT NULL,
+ `address` text NOT NULL,
+ `mother_telefone` text NOT NULL,
+ `father_telefone` text NOT NULL,
+ PRIMARY KEY (`id`),
+ UNIQUE KEY `name` (`name`),
+ CONSTRAINT `fk_name_student` FOREIGN KEY (`name`) REFERENCES `users` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8"""
+
+    subjects = """CREATE TABLE IF NOT EXISTS `subjects` (
+ `id` int(11) NOT NULL AUTO_INCREMENT,
+ `name` varchar(30) NOT NULL,
+ PRIMARY KEY (`id`),
+ UNIQUE KEY `name` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8"""
+
+    teachers = """CREATE TABLE IF NOT EXISTS `teachers` (
+ `id` int(30) NOT NULL AUTO_INCREMENT,
+ `name` varchar(30) NOT NULL,
+ `subject` varchar(30) NOT NULL,
+ PRIMARY KEY (`id`),
+ UNIQUE KEY `name` (`name`),
+ KEY `fk_sub_teach` (`subject`),
+ CONSTRAINT `fk_name_teacher` FOREIGN KEY (`name`) REFERENCES `users` (`name`),
+ CONSTRAINT `fk_sub_teach` FOREIGN KEY (`subject`) REFERENCES `subjects` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8"""
+
+    users = """	CREATE TABLE IF NOT EXISTS `users` (
+ `id` int(11) NOT NULL AUTO_INCREMENT,
+ `name` varchar(30) NOT NULL,
+ `password` varchar(30) NOT NULL,
+ `privilege` varchar(50) NOT NULL,
+ `email` varchar(50) NOT NULL,
+ PRIMARY KEY (`id`),
+ UNIQUE KEY `name` (`name`),
+ UNIQUE KEY `email` (`email`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8
+    """
+
+    command_handler.execute(attendance)
+    command_handler.execute(students)
+    command_handler.execute(subjects)
+    command_handler.execute(teachers)
+    command_handler.execute(users)
+
+    main()
 
 
 def auth(type):
@@ -86,20 +152,50 @@ def createuser(type):
     command_handler.execute("INSERT INTO users (name, email, password, privilege) VALUES (%s,%s,%s,%s)", query_vals)
     db.commit()
     print(name + " has been registered as a new " + privilege + "!")
+    if privilege == 'Student':
+        add_student(name.title())
+    elif privilege == 'Teacher':
+        add_teacher(name.title())
 
 
 def eraseuser(type):
     privilege = str(type).title()
     print("")
     print("Delete Existing " + privilege)
-    email = input(str(privilege + " email: "))
-    query_vals = (email, privilege)
-    command_handler.execute("DELETE FROM users WHERE email = %s AND privilege = %s", query_vals)
-    db.commit()
-    if command_handler.rowcount < 1:
-        print('User not found')
+    if privilege == 'Student':
+        command_handler.execute("SELECT name, email FROM users WHERE privilege = %s", (privilege,))
+        user = command_handler.fetchall()
+        for users in command_handler:
+            user = str(user)
+            user = user.replace('(', '')
+            user = user.replace(')', '')
+            user = user.replace("'", '')
+            user = user.replace(',','\n')
+        print(user)
+
+        name = input(str(privilege + " name: (Exactly like above!)\n"))
+        email = input(str(privilege + " email: "))
+        query_vals = (email, privilege)
+        if privilege == 'Student':
+            delete_student(name.title())
+        elif privilege == 'Teacher':
+            delete_teacher(name.title())
+        command_handler.execute("DELETE FROM users WHERE email = %s AND privilege = %s", query_vals)
+        db.commit()
+        if command_handler.rowcount < 1:
+            print('User not found')
+        else:
+            print("The user linked to this email:" + email + ". has been deleted from the system!")
+
     else:
-        print(email + " has been deleted!")
+        email = input(str(privilege + " email: "))
+        query_vals = (email, privilege)
+        command_handler.execute("DELETE FROM users WHERE email = %s AND privilege = %s", query_vals)
+        db.commit()
+        if command_handler.rowcount < 1:
+            print('User not found')
+        else:
+            print("The user linked to this email:"+ email + ". has been deleted from the system!")
 
 
 def admin_session():
@@ -110,10 +206,12 @@ def admin_session():
         print("1. Register New Student")
         print("2. Register New Teacher")
         print("3. Register New Helper")
-        print("4. Delete Existing Student")
-        print("5. Delete Existing Teacher")
-        print("6. Delete Existing Helper")
-        print("7. Logout")
+        print("4. Register New Subject")
+        print("5. Delete Existing Student")
+        print("6. Delete Existing Teacher")
+        print("7. Delete Existing Helper")
+        print("8. Delete Existing Subject")
+        print("9. Logout")
 
         user_opt = input(str("Option: "))
         blank()
@@ -124,12 +222,18 @@ def admin_session():
         elif user_opt == "3":
             createuser("Helper")
         elif user_opt == "4":
-            eraseuser("Student")
+            sub = input(str("Which subject do you want to create?\n"))
+            create_subject(sub)
         elif user_opt == "5":
-            eraseuser("Teacher")
+            eraseuser("Student")
         elif user_opt == "6":
-            eraseuser("Helper")
+            eraseuser("Teacher")
         elif user_opt == "7":
+            eraseuser("Helper")
+        elif user_opt == "8":
+            sub = input(str("Which subject do you want to delete?\n"))
+            delete_subject(sub)
+        elif user_opt == "9":
             break
 
 
@@ -138,11 +242,11 @@ def helper_session():
         print("")
         print("Helper Menu")
         print("")
-        print("1. Mark Student Register")
-        print("2. Update Student Register")
+        print("1. Mark Student's Register")
+        print("2. Update Student's Register")
         print("3. View Student's Register")
         print("4. View All Student's Registers")
-        print("5. Set Student Grade")
+        print("5. Update Student's Info")
         print("6. Logout")
         blank()
         user_opt = input(str("Option: "))
@@ -178,10 +282,10 @@ def helper_session():
             for record in records:
                 print(record)
         elif user_opt == "5":
-            print("Which student you want to set the grade? ")
+            print("Which student you want to update? ")
             view_all_students()
             student = input(str(""))
-            set_grades(student)
+            update_student(student)
         elif user_opt == "6":
             break
         else:
@@ -245,7 +349,7 @@ def recover_pass(email, privilege):
     password = get_pass(str_rec, privilege)
     body = """<p>&nbsp; &nbsp; &nbsp; &nbsp;<img src="https://i.imgur.com/gNGuk0h.png" alt="" /></p>
             <p>You requested a Password Recovery.</p>
-            <p>Your password is:"""+password+""" .</p>
+            <p>Your password is:""" + password + """ .</p>
             <p></p>
             <p></p>
             <p>=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-</p>
@@ -264,7 +368,7 @@ def recover_pass(email, privilege):
 
 def view_all_students():
     students = ""
-    command_handler.execute("SELECT name FROM users WHERE privilege = 'Student'")
+    command_handler.execute("SELECT name, grade FROM students WHERE privilege = 'Student'")
     for user in command_handler:
         students = str(user)
         students = students.replace('(', '')
@@ -277,4 +381,4 @@ def blank():
     print("")
 
 
-helper_session()
+initialization()
