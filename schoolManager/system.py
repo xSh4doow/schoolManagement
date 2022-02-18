@@ -1,7 +1,10 @@
 import mysql.connector as mysql
 import yagmail
 from schoolManager.school import mark_attendance, update_attendance, check_student, add_student, \
-    add_teacher, delete_student, delete_teacher, update_student, delete_subject, create_subject
+    add_teacher, delete_student, delete_teacher, update_student, delete_subject, create_subject, add_record, \
+    update_record, view_student_records, view_subject_records, view_avg_student_record, view_avg_record, \
+    bulk_update_student, view_student
+from texts import *
 
 #Using PHPmyadmin, change 'db' to where your db is located! (remember to also change in school.py!)
 db = mysql.connect(host="localhost", user="root", password="", database="escola")
@@ -23,6 +26,7 @@ def main():
         user_opt = input(str("Option : "))
         if user_opt == "1":
             print("Logging in as Student!")
+            auth("Student")
         elif user_opt == "2":
             print("Logging in as Teacher!")
             auth("Teacher")
@@ -95,11 +99,28 @@ def initialization():
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8
     """
 
+    records = """
+    CREATE TABLE IF NOT EXISTS `records` (
+     `id` int(11) NOT NULL AUTO_INCREMENT,
+     `test_name` varchar(30) NOT NULL,
+     `student_name` varchar(30) NOT NULL,
+     `student_record` double NOT NULL,
+     `test_date` date NOT NULL,
+     `subject` varchar(30) NOT NULL,
+     PRIMARY KEY (`id`),
+     KEY `fk_name_sub` (`subject`),
+     KEY `fk_studentname_student` (`student_name`),
+     CONSTRAINT `fk_name_sub` FOREIGN KEY (`subject`) REFERENCES `subjects` (`name`),
+     CONSTRAINT `fk_studentname_student` FOREIGN KEY (`student_name`) REFERENCES `students` (`name`)
+    ) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8
+                """
+
     command_handler.execute(attendance)
     command_handler.execute(students)
     command_handler.execute(subjects)
     command_handler.execute(teachers)
     command_handler.execute(users)
+    command_handler.execute(records)
 
     main()
 
@@ -119,10 +140,11 @@ def auth(type):
     else:
         print("Welcome " + privilege + "!")
         if privilege == "Student":
-            """student_session()"""
+            student_session()
         elif privilege == "Helper":
             helper_session()
-        # elif privilege == "Teacher":
+        elif privilege == "Teacher":
+            teacher_session()
 
 
 def auth_adm():
@@ -242,12 +264,13 @@ def helper_session():
         print("")
         print("Helper Menu")
         print("")
-        print("1. Mark Student's Register")
-        print("2. Update Student's Register")
-        print("3. View Student's Register")
-        print("4. View All Student's Registers")
+        print("1. Mark Student's Attendance")
+        print("2. Update Student's Attendance")
+        print("3. View Student's Attendance")
+        print("4. View All Student's Attendance")
         print("5. Update Student's Info")
-        print("6. Logout")
+        print("6. View Student's Info")
+        print("7. Logout")
         blank()
         user_opt = input(str("Option: "))
         blank()
@@ -257,12 +280,12 @@ def helper_session():
             student = input(str(""))
             mark_attendance(student)
         elif user_opt == "2":
-            print("Which student you update the register?")
+            print("Which student you update the attendance?")
             view_all_students()
             student = input(str(""))
             update_attendance(student)
         elif user_opt == "3":
-            print("Which student you want to check the registers?")
+            print("Which student you want to check the attendance?")
             view_all_students()
             student = input(str(""))
             is_student = check_student(student)
@@ -271,13 +294,13 @@ def helper_session():
             else:
                 print(f"Viewing {student} registers!")
                 t_student = [student]
-                command_handler.execute("SELECT name, date, status, grade FROM attendance WHERE name = %s", t_student)
+                command_handler.execute("SELECT `name`, `date`, `status`, `grade` FROM attendance WHERE name = %s", t_student)
                 records = command_handler.fetchall()
                 for record in records:
                     print(record)
         elif user_opt == "4":
             print("Viewing all student registers!")
-            command_handler.execute("SELECT name, date, status, grade FROM attendance")
+            command_handler.execute("SELECT `name`, `date`, `status`, `grade` FROM attendance")
             records = command_handler.fetchall()
             for record in records:
                 print(record)
@@ -287,6 +310,8 @@ def helper_session():
             student = input(str(""))
             update_student(student)
         elif user_opt == "6":
+            view_student()
+        elif user_opt == "7":
             break
         else:
             print("No valid option was selected!")
@@ -367,14 +392,71 @@ def recover_pass(email, privilege):
 
 
 def view_all_students():
-    students = ""
-    command_handler.execute("SELECT name, grade FROM students WHERE privilege = 'Student'")
+    command_handler.execute("SELECT name, grade FROM students")
+    students = command_handler.fetchall()
     for user in command_handler:
         students = str(user)
         students = students.replace('(', '')
         students = students.replace(')', '')
         students = students.replace("'", '')
     print(str(students))
+
+def teacher_session():
+    while 1:
+        blank()
+        print("Teacher Menu")
+        blank()
+        print("1. Add Student Record")
+        print("2. Update Student Record")
+        print("3. View Student's Records")
+        print("4. View Subject's Records")
+        print("5. View Student's Average Record")
+        print("6. View Subject's Average Record")
+        print("7. Logout")
+        blank()
+        user_opt = input(str(Option))
+        if user_opt == "1":
+            add_record()
+        elif user_opt == "2":
+            update_record()
+        elif user_opt == "3":
+            view_student_records()
+        elif user_opt == "4":
+            view_subject_records()
+        elif user_opt == "5":
+            view_avg_student_record()
+        elif user_opt == "6":
+            view_avg_record()
+        elif user_opt == "7":
+            break
+        else:
+            print(NoValidOption)
+
+
+def student_session():
+    while 1:
+        blank()
+        print(Student_Menu)
+        blank()
+        print(Student_Records)
+        print(Student_Average_Record)
+        print(Student_Profile)
+        print(Update_Student_Profile)
+        print(Logout)
+        blank()
+        user_opt = input(str(Option))
+        if user_opt == "1":
+            view_student_records()
+        elif user_opt == "2":
+            view_avg_student_record()
+        elif user_opt == "3":
+            view_student()
+        elif user_opt == "4":
+            bulk_update_student()
+        elif user_opt == "5":
+            break
+        else:
+            print(NoValidOption)
 
 
 def blank():
